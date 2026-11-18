@@ -34,6 +34,7 @@ static car_mode_t s_mode = MODE_TRACK;
 /* ========================= 权重式循迹参数 ========================= */
 #define STEER_GAIN     110      /* 权重 -> 占空比换算系数 */
 #define STEER_MAX      4       /* 偏差限幅, 决定最大转弯力度 */
+#define DUTY_MIN       80      /* 内侧轮最小占空比, 防止最边边时被钳到 0 停转 */
 
 /*
  * 权重表: IR1~IR4 从左到右的位置权重
@@ -89,13 +90,13 @@ static void track_control(void)
     int duty_l = SPEED_BASE + error * STEER_GAIN;
     int duty_r = SPEED_BASE - error * STEER_GAIN;
 
-    /* 占空比限幅 0~1023 */
-    if (duty_l < 0) duty_l = 0;
-    if (duty_r < 0) duty_r = 0;
+    /* 占空比限幅: 内侧轮保留最小速度, 防止最边边(error=±3/±4)被钳到 0 停转 */
+    if (duty_l < DUTY_MIN) duty_l = DUTY_MIN;
+    if (duty_r < DUTY_MIN) duty_r = DUTY_MIN;
     if (duty_l > 1023) duty_l = 1023;
     if (duty_r > 1023) duty_r = 1023;
 
-    car_diff(duty_r, duty_l);
+    car_diff(duty_l, duty_r);
 }
 
 /* ================================================================== */
